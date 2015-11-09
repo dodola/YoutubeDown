@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2015 Baidu, Inc. All Rights Reserved.
+  -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+
+    <ImageView
+        android:id="@+id/loading_small_pic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:src="@null"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/loading_logo_pb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:indeterminateDrawable="@mipmap/ic_launcher" />
+
+    <TextView
+        android:id="@+id/tv_loading_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/loading_logo_pb"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:paddingTop="12dp"
+        android:text="加载中"
+        android:textSize="11dp" />
+
+</RelativeLayout >
