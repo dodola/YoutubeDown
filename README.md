@@ -15,3 +15,8 @@ YouTube视频下载应用，可下载非加密和加密视频。
 3. 直接下载音频功能
 4. 下载管理
 5. 直接音频播放
+
+##Thanks
+
+* [RxJava](https://github.com/ReactiveX/RxJava)
+* [duktape](https://github.com/svaarala/duktape)
