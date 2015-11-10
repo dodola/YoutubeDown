@@ -35,8 +35,7 @@ import dodola.downtube.utils.LogUtil;
 
 /**
  * @Description://youtube工具类
- * @Author sunpengfei
- * @Date 2014-3-22 下午4:51:31
+
  * @Version
  */
 public class YoutubeUtils {
