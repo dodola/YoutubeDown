@@ -156,7 +156,12 @@ public class RxYoutube {
             }
         }
         String f1def =
-            YoutubeUtils.getRegexString(jsContent, String.format("(function %s\\(.*?\\)\\{[^\\{]+\\})", finalF1));
+                YoutubeUtils.getRegexString(jsContent, String.format("((function\\s+%s|[{;,]%s\\s*=\\s*function|var\\s+%s\\s*=\\s*function\\s*)\\([^)]*\\)\\s*\\{[^\\{]+\\})", finalF1, finalF1, finalF1));
+
+        if (f1def.startsWith(",")) {
+            f1def = f1def.replaceFirst(",", "");
+        }
+
         StringBuilder functionSb = new StringBuilder();
         trJs(f1def, jsContent, functionSb);
 
