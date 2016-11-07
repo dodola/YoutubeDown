@@ -3,10 +3,6 @@
  */
 package dodola.downtube;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
 import android.app.Dialog;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
@@ -19,19 +15,18 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
-import android.text.TextUtils;
-import android.view.LayoutInflater;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
@@ -40,8 +35,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.VideoView;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+
 import dodola.downtube.core.RxYoutube;
 import dodola.downtube.core.YoutubeUtils;
 import dodola.downtube.core.entity.FmtStreamMap;
@@ -50,7 +49,7 @@ import dodola.downtube.view.YouTuBeWebView;
 import rx.functions.Action1;
 
 public class MainActivity extends AppCompatActivity
-    implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener {
 
     private ProgressDialog mProgressDialog;
     private DownloadManager downloadManager;
@@ -62,7 +61,7 @@ public class MainActivity extends AppCompatActivity
     private String mCurrentUrl;
     private LayoutInflater layoutInflater;
     private View videoView;
-    public static final String YOUTUBE = "https://m.youtube.com";
+    public static final String YOUTUBE = "https://m.youtube.com/watch?v=DoTPz4In3NA";
     private String loadUrl = YOUTUBE;
     private FloatingActionButton fab;
     private Action1<Throwable> errorAction = new Action1<Throwable>() {
@@ -102,7 +101,7 @@ public class MainActivity extends AppCompatActivity
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
@@ -118,7 +117,12 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+//            super.onBackPressed();
+            if (myWebView.canGoBack()) {
+                myWebView.goBack();
+            } else {
+                super.onBackPressed();
+            }
         }
     }
 
@@ -133,34 +137,34 @@ public class MainActivity extends AppCompatActivity
             streamArrays.toArray(item1);
 
             Dialog alertDialog = new AlertDialog.Builder(this).
-                setTitle("选择下载类型").
-                setIcon(R.mipmap.ic_launcher)
-                .setItems(item1, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        final FmtStreamMap fmtStreamMap = result.get(which);
-                        RxYoutube.parseDownloadUrl(fmtStreamMap, new Action1<String>() {
-                            @Override
-                            public void call(String s) {
-                                dismissWaitDialog();
-                                //调用系统下载
-                                String fileName = fmtStreamMap.title + "." + fmtStreamMap.extension;
-                                Uri uri = Uri.parse(s);
-                                DownloadManager.Request request = new DownloadManager.Request(uri);
-                                request.setDestinationInExternalFilesDir(MainActivity.this,
-                                    Environment.DIRECTORY_MOVIES, fileName);
-                                downloadManager.enqueue(request);
-                            }
-                        });
-                    }
-                }).
-                    setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
+                    setTitle("选择下载类型").
+                    setIcon(R.mipmap.ic_launcher)
+                    .setItems(item1, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+                            final FmtStreamMap fmtStreamMap = result.get(which);
+                            RxYoutube.parseDownloadUrl(fmtStreamMap, new Action1<String>() {
+                                @Override
+                                public void call(String s) {
+                                    dismissWaitDialog();
+                                    //调用系统下载
+                                    String fileName = fmtStreamMap.title + "." + fmtStreamMap.extension;
+                                    Uri uri = Uri.parse(s);
+                                    DownloadManager.Request request = new DownloadManager.Request(uri);
+                                    request.setDestinationInExternalFilesDir(MainActivity.this,
+                                            Environment.DIRECTORY_MOVIES, fileName);
+                                    downloadManager.enqueue(request);
+                                }
+                            });
                         }
                     }).
-                    create();
+                            setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                }
+                            }).
+                            create();
             alertDialog.show();
         }
     }
@@ -320,7 +324,7 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     try {
                         Field localField2 = Class.forName("android.webkit.HTML5VideoFullScreen$VideoSurfaceView")
-                            .getDeclaredField("this$0");
+                                .getDeclaredField("this$0");
                         localField2.setAccessible(true);
                         Object localObject = localField2.get(((FrameLayout) view).getFocusedChild());
                         Field localField3 = localField2.getType().getSuperclass().getDeclaredField("mUri");
@@ -359,7 +363,7 @@ public class MainActivity extends AppCompatActivity
                 super.onReceivedError(view, errorCode, description, failingUrl);
                 LogUtil.d("========onReceivedError========");
                 if ((errorCode == WebViewClient.ERROR_HOST_LOOKUP) || (errorCode == WebViewClient.ERROR_TIMEOUT)
-                    || (errorCode == WebViewClient.ERROR_CONNECT)) {
+                        || (errorCode == WebViewClient.ERROR_CONNECT)) {
                     myWebView.loadData("", "text/html", "utf-8");
                 }
             }
