@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
@@ -20,12 +19,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -35,7 +29,6 @@ import dodola.downtube.utils.LogUtil;
 
 /**
  * @Description://youtube工具类
-
  * @Version
  */
 public class YoutubeUtils {
@@ -232,17 +225,6 @@ public class YoutubeUtils {
                 value = decode(nameValue[1], encoding);
             }
             Log.d("YoutubeUtils", "name:" + name + ",values:" + value);
-
-            // fallback_host=tc.v1.cache8.googlevideo.com&
-            // s=9E89E8DE8FF59D59BA5F96D9A220724C1A304F634B2C19.55E8C8A3A7C02C3FBF4D274A85A41F5F55F0401B&
-            // itag=17&
-            // type=video%2F3gpp%3B+codecs%3D%22mp4v.20.3%2C+mp4a.40.2%22&
-            // quality=small&
-            // url=http%3A%2F%2Fr20---sn-a5m7lne6.googlevideo.com%2Fvideoplayback%3Fkey%3Dyt5%26ip%3D173.254.202
-            // .174%26mt%3D1393571459%26fexp%3D936112%252C937417%252C937416%252C913434%252C936910%252C936913
-            // %252C902907%26itag%3D17%26source%3Dyoutube%26sver%3D3%26mv%3Dm%26ms%3Dau%26sparams%3Dgcr%252Cid%252Cip
-            // %252Cipbits%252Citag%252Csource%252Cupn%252Cexpire%26ipbits%3D0%26expire%3D1393597755%26gcr%3Dus%26upn
-            // %3Du-4gaUCuZCM%26id%3D782b01f5511b174f
 
             if (TextUtils.equals("fallback_host", name)) {
                 streamMap.fallbackHost = value;

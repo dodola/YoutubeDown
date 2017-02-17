@@ -23,7 +23,6 @@ import dodola.downtube.core.entity.FmtStreamMap;
 import rx.Observable;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
@@ -31,6 +30,7 @@ import rx.schedulers.Schedulers;
  * Created by sunpengfei on 15/11/9.
  */
 public class RxYoutube {
+    public static final String BASEURL = "http://www.youtube.com/";
     public static final String WATCHV = "http://www.youtube.com/watch?v=%s";
     private static final String USERAGENT = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)";
     private static final String JSPLAYER = "ytplayer\\.config\\s*=\\s*([^\\n]+);";
@@ -39,8 +39,7 @@ public class RxYoutube {
     private static final String[] REGEX_PRE =
         {"*", ".", "?", "+", "$", "^", "[", "]", "(", ")", "{", "}", "|", "\\", "/"};
 
-    public static void fetchYoutube(final String vid, Action1<List<FmtStreamMap>> resultAction,
-                                    Action1<Throwable> errorAction) {
+    public static void fetchYoutube(final String vid, Subscriber<List<FmtStreamMap>> resultSubscriber) {
 
         Observable.create(new Observable.OnSubscribe<String>() {
             @Override
@@ -77,6 +76,8 @@ public class RxYoutube {
                         String html5playerJS = ytplayerConfig.getJSONObject("assets").getString("js");
                         if (html5playerJS.startsWith("//")) {
                             html5playerJS = "http:" + html5playerJS;
+                        } else if (html5playerJS.startsWith("/")) {
+                            html5playerJS = BASEURL + html5playerJS;
                         }
 
                         Log.d("Html5PlayerJS", "htmljs:" + html5playerJS);
@@ -120,10 +121,10 @@ public class RxYoutube {
             }
         }).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(resultAction, errorAction);
+            .subscribe(resultSubscriber);
     }
 
-    public static void parseDownloadUrl(final FmtStreamMap fmtStreamMap, Action1<String> resultAction) {
+    public static void parseDownloadUrl(final FmtStreamMap fmtStreamMap, Subscriber<String> resultSubscriber) {
         Observable.create(new Observable.OnSubscribe<String>() {
             @Override
             public void call(Subscriber<? super String> subscriber) {
@@ -140,12 +141,18 @@ public class RxYoutube {
             }
         }).subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(resultAction);
+            .subscribe(resultSubscriber);
     }
 
     private static String decipher(String jsContent, FmtStreamMap fmtStreamMap) {
-        final String f1 =
-            YoutubeUtils.getRegexString(jsContent, "\\w+\\.sig\\|\\|([$a-zA-Z]+)\\([$a-zA-Z]+\\.[$a-zA-Z]+\\)");
+        String f1 =
+            YoutubeUtils.getRegexString(jsContent, "\\w+\\.sig\\|\\|([$a-zA-Z]+)\\([$a-zA-Z]+\\ .[$a-zA-Z]+\\)");
+        if (TextUtils.isEmpty(f1)) {
+            f1 = YoutubeUtils
+                .getRegexString(jsContent,
+                    "\\w+\\.sig.*?\\?.*&&\\w+\\.set\\(\\\"signature\\\",([$a-zA-Z]+)\\([$a-zA-Z]+\\"
+                        + ".[$a-zA-Z]+\\)\\)");
+        }
         String finalF1 = f1;
 
         for (String aREGEX_PRE : REGEX_PRE) {
@@ -156,7 +163,10 @@ public class RxYoutube {
             }
         }
         String f1def =
-                YoutubeUtils.getRegexString(jsContent, String.format("((function\\s+%s|[{;,]%s\\s*=\\s*function|var\\s+%s\\s*=\\s*function\\s*)\\([^)]*\\)\\s*\\{[^\\{]+\\})", finalF1, finalF1, finalF1));
+            YoutubeUtils.getRegexString(jsContent, String.format(
+                "((function\\s+%s|[{;,]%s\\s*=\\s*function|var\\s+%s\\s*=\\s*function\\s*)\\([^)]*\\)"
+                    + "\\s*\\{[^\\{]+\\})",
+                finalF1, finalF1, finalF1));
 
         if (f1def.startsWith(",")) {
             f1def = f1def.replaceFirst(",", "");

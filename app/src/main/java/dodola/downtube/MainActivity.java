@@ -3,6 +3,10 @@
  */
 package dodola.downtube;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.Dialog;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
@@ -35,21 +39,17 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import android.widget.VideoView;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
 import dodola.downtube.core.RxYoutube;
 import dodola.downtube.core.YoutubeUtils;
 import dodola.downtube.core.entity.FmtStreamMap;
 import dodola.downtube.utils.LogUtil;
 import dodola.downtube.view.YouTuBeWebView;
-import rx.functions.Action1;
+import rx.Subscriber;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+    implements NavigationView.OnNavigationItemSelectedListener {
 
     private ProgressDialog mProgressDialog;
     private DownloadManager downloadManager;
@@ -61,23 +61,9 @@ public class MainActivity extends AppCompatActivity
     private String mCurrentUrl;
     private LayoutInflater layoutInflater;
     private View videoView;
-    public static final String YOUTUBE = "https://m.youtube.com/watch?v=DoTPz4In3NA";
+    public static final String YOUTUBE = "https://m.youtube.com/";
     private String loadUrl = YOUTUBE;
     private FloatingActionButton fab;
-    private Action1<Throwable> errorAction = new Action1<Throwable>() {
-        @Override
-        public void call(Throwable throwable) {
-            if (mProgressDialog != null) {
-                mProgressDialog.dismiss();
-            }
-        }
-    };
-    private Action1<List<FmtStreamMap>> resultAction = new Action1<List<FmtStreamMap>>() {
-        @Override
-        public void call(List<FmtStreamMap> fmtStreamMaps) {
-            showDialog(fmtStreamMaps);
-        }
-    };
     private ProgressBar mLoadingProgressBar;
 
     @Override
@@ -95,13 +81,29 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view) {
                 showWaitDialog();
                 //调用解析
-                RxYoutube.fetchYoutube(mVideoId, resultAction, errorAction);
+                RxYoutube.fetchYoutube(mVideoId, new Subscriber<List<FmtStreamMap>>() {
+                    @Override
+                    public void onCompleted() {
+                        dismissWaitDialog();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        dismissWaitDialog();
+                    }
+
+                    @Override
+                    public void onNext(List<FmtStreamMap> fmtStreamMaps) {
+                        dismissWaitDialog();
+                        showDialog(fmtStreamMaps);
+                    }
+                });
             }
         });
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+            this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
@@ -117,7 +119,7 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-//            super.onBackPressed();
+            //            super.onBackPressed();
             if (myWebView.canGoBack()) {
                 myWebView.goBack();
             } else {
@@ -137,34 +139,48 @@ public class MainActivity extends AppCompatActivity
             streamArrays.toArray(item1);
 
             Dialog alertDialog = new AlertDialog.Builder(this).
-                    setTitle("选择下载类型").
-                    setIcon(R.mipmap.ic_launcher)
-                    .setItems(item1, new DialogInterface.OnClickListener() {
+                setTitle("选择下载类型").
+                setIcon(R.mipmap.ic_launcher)
+                .setItems(item1, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        final FmtStreamMap fmtStreamMap = result.get(which);
+                        RxYoutube.parseDownloadUrl(fmtStreamMap, new Subscriber<String>() {
+                            @Override
+                            public void onCompleted() {
+                                dismissWaitDialog();
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                dismissWaitDialog();
+                                e.printStackTrace();
+                                Toast.makeText(MainActivity.this, "Download Error", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onNext(String downloadUrl) {
+                                dismissWaitDialog();
+
+                                //调用系统下载
+                                String fileName = fmtStreamMap.title + "." + fmtStreamMap.extension;
+                                Uri uri = Uri.parse(downloadUrl);
+                                DownloadManager.Request request = new DownloadManager.Request(uri);
+                                request.setDestinationInExternalFilesDir(MainActivity.this,
+                                    Environment.DIRECTORY_MOVIES, fileName);
+                                downloadManager.enqueue(request);
+                            }
+                        });
+
+                    }
+                }).
+                    setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            final FmtStreamMap fmtStreamMap = result.get(which);
-                            RxYoutube.parseDownloadUrl(fmtStreamMap, new Action1<String>() {
-                                @Override
-                                public void call(String s) {
-                                    dismissWaitDialog();
-                                    //调用系统下载
-                                    String fileName = fmtStreamMap.title + "." + fmtStreamMap.extension;
-                                    Uri uri = Uri.parse(s);
-                                    DownloadManager.Request request = new DownloadManager.Request(uri);
-                                    request.setDestinationInExternalFilesDir(MainActivity.this,
-                                            Environment.DIRECTORY_MOVIES, fileName);
-                                    downloadManager.enqueue(request);
-                                }
-                            });
                         }
                     }).
-                            setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                }
-                            }).
-                            create();
+                    create();
             alertDialog.show();
         }
     }
@@ -324,7 +340,7 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     try {
                         Field localField2 = Class.forName("android.webkit.HTML5VideoFullScreen$VideoSurfaceView")
-                                .getDeclaredField("this$0");
+                            .getDeclaredField("this$0");
                         localField2.setAccessible(true);
                         Object localObject = localField2.get(((FrameLayout) view).getFocusedChild());
                         Field localField3 = localField2.getType().getSuperclass().getDeclaredField("mUri");
@@ -363,7 +379,7 @@ public class MainActivity extends AppCompatActivity
                 super.onReceivedError(view, errorCode, description, failingUrl);
                 LogUtil.d("========onReceivedError========");
                 if ((errorCode == WebViewClient.ERROR_HOST_LOOKUP) || (errorCode == WebViewClient.ERROR_TIMEOUT)
-                        || (errorCode == WebViewClient.ERROR_CONNECT)) {
+                    || (errorCode == WebViewClient.ERROR_CONNECT)) {
                     myWebView.loadData("", "text/html", "utf-8");
                 }
             }
